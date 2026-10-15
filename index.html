@@ -1,0 +1,1443 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Kerbside: a money and tax app prototype for UK taxi and private hire drivers.">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Kerbside Driver App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one phone-width app column (full screen on phones); on wide screens a short brief sits to its left.
+   Direction: night-shift tarmac with the amber glow of a "for hire" roof sign and a fare meter's digits. */
+:root{
+  --bg:#E6EBF0; --app:#F3F6F8; --surface:#FFFFFF; --surface-2:#EBF0F4;
+  --ink:#111922; --ink-2:#4F5B68; --ink-3:#7F8B98; --line:#D8DFE6;
+  --night:#121B24; --night-ink:#EEF3F7; --night-2:#97A5B3; --night-line:rgba(255,255,255,.12); --sign-off:#26313C;
+  --amber:#F4B223; --amber-ink:#2B1F00; --amber-soft:#FCEFCB; --amber-text:#875C00;
+  --pos:#0E7A49; --pos-soft:#DCF1E5; --neg:#B3372A; --neg-soft:#F9E2DE; --warn:#9E5C00; --warn-soft:#FCEBCD;
+  --info:#2D5B8C; --info-soft:#E1EBF6;
+  --plate:#F7CF1A; --plate-ink:#111111; --plate-band:#1D4FA3; --plate-band-ink:#FFFFFF;
+  --scrim:rgba(6,10,14,.45);
+  --shadow:0 1px 2px rgba(17,25,34,.06),0 18px 50px rgba(17,25,34,.14);
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --r-lg:20px; --r-md:14px; --r-sm:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#06090C; --app:#0D1318; --surface:#151D25; --surface-2:#1D2731;
+    --ink:#E8EEF3; --ink-2:#A3B0BC; --ink-3:#6E7B88; --line:#26323D;
+    --night:#1C2833; --night-ink:#EEF3F7; --night-2:#97A5B3; --night-line:rgba(255,255,255,.12); --sign-off:#2B3743;
+    --amber:#F6BA3C; --amber-ink:#241A00; --amber-soft:#382A0B; --amber-text:#F6BA3C;
+    --pos:#47C98B; --pos-soft:#11301F; --neg:#FF8371; --neg-soft:#3B1C17; --warn:#F2A845; --warn-soft:#3A2A12;
+    --info:#8DB8E6; --info-soft:#172A3D;
+    --scrim:rgba(0,0,0,.6);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 50px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#06090C; --app:#0D1318; --surface:#151D25; --surface-2:#1D2731;
+  --ink:#E8EEF3; --ink-2:#A3B0BC; --ink-3:#6E7B88; --line:#26323D;
+  --night:#1C2833; --night-ink:#EEF3F7; --night-2:#97A5B3; --night-line:rgba(255,255,255,.12); --sign-off:#2B3743;
+  --amber:#F6BA3C; --amber-ink:#241A00; --amber-soft:#382A0B; --amber-text:#F6BA3C;
+  --pos:#47C98B; --pos-soft:#11301F; --neg:#FF8371; --neg-soft:#3B1C17; --warn:#F2A845; --warn-soft:#3A2A12;
+  --info:#8DB8E6; --info-soft:#172A3D;
+  --scrim:rgba(0,0,0,.6);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 50px rgba(0,0,0,.45);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0;text-align:inherit}
+button:disabled{opacity:.4;cursor:default}
+p,h1,h2,h3,ul,ol,dl,dd{margin:0}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+.small{font-size:13.5px}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+
+/* ---------- stage */
+.stage{height:100%;display:flex;justify-content:center;align-items:center;gap:56px}
+.intro{display:none}
+.app{position:relative;width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;background:var(--app);overflow:hidden}
+@media (min-width:600px) and (max-width:959px){ .app{border-inline:1px solid var(--line)} }
+@media (min-width:960px){
+  .stage{padding-inline:32px}
+  .intro{display:flex;flex-direction:column;gap:20px;width:340px;flex:none}
+  .app{width:420px;flex:none;height:min(880px,calc(100% - 48px));border-radius:32px;border:1px solid var(--line);box-shadow:var(--shadow)}
+}
+.intro-h{font-family:var(--f-display);font-weight:800;font-stretch:90%;font-size:40px;line-height:1.04;letter-spacing:-.01em;text-wrap:balance}
+.intro p{color:var(--ink-2);font-size:17px;max-width:34ch}
+.intro h2{font-family:var(--f-display);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-2)}
+.intro ul{display:flex;flex-direction:column;gap:8px;padding-left:20px;font-size:15.5px}
+.intro .fine{font-size:13.5px;color:var(--ink-3)}
+
+/* ---------- screen + type */
+.screen{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:14px 16px 112px;display:flex;flex-direction:column;gap:16px}
+.scr-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:6px}
+.scr-head > div{min-width:0}
+h1{font-family:var(--f-display);font-weight:800;font-stretch:92%;font-size:28px;line-height:1.1;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.2;text-wrap:balance}
+.sub{color:var(--ink-2);font-size:14.5px;margin-top:4px}
+.eyebrow,.lbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-2)}
+.big{font-family:var(--f-display);font-weight:800;font-stretch:85%;font-size:38px;line-height:1.05}
+.mid{font-family:var(--f-display);font-weight:700;font-stretch:90%;font-size:22px;line-height:1.1}
+.pill{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.pill.pos{background:var(--pos-soft);color:var(--pos)} .pill.neg{background:var(--neg-soft);color:var(--neg)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:14px}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.count{min-width:24px;height:24px;border-radius:12px;display:grid;place-items:center;background:var(--neg);color:var(--surface);font-size:13px;font-weight:700;padding:0 7px}
+
+/* ---------- buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:var(--r-md);font-weight:700;font-size:16px;transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn-block{width:100%}
+.btn-amber{background:var(--amber);color:var(--amber-ink)}
+.btn-ink{background:var(--ink);color:var(--surface)}
+.btn-quiet{background:var(--surface-2);color:var(--ink)}
+.btn-night{background:var(--sign-off);color:var(--night-ink)}
+.btn-danger{background:var(--neg-soft);color:var(--neg)}
+.btn-sm{height:34px;padding:0 14px;border-radius:var(--r-sm);font-size:14px;font-weight:700;background:var(--surface-2);color:var(--ink);white-space:nowrap}
+.btn-sm.amber{background:var(--amber);color:var(--amber-ink)}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--surface);border:1px solid var(--line);font-size:20px;font-weight:700;flex:none}
+.link{color:var(--amber-text);font-weight:700;font-size:14px}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);padding:4px;border-radius:12px;gap:4px}
+.seg button{padding:8px 6px;border-radius:9px;font-weight:700;font-size:14px;color:var(--ink-2);text-align:center}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+/* ---------- today: shift sign */
+.shift{background:var(--night);color:var(--night-ink);border-radius:var(--r-lg);padding:16px;display:flex;flex-direction:column;gap:16px}
+.shift-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sign{display:inline-block;font-family:var(--f-display);font-weight:800;font-stretch:118%;font-size:13px;letter-spacing:.16em;text-transform:uppercase;padding:7px 14px 6px;border-radius:10px 10px 4px 4px;background:var(--sign-off);color:var(--night-2);transition:background .3s,color .3s,box-shadow .3s}
+.shift.on .sign,.sign.lit{background:var(--amber);color:var(--amber-ink);box-shadow:0 0 26px color-mix(in srgb,var(--amber) 55%,transparent)}
+.shift-note{font-size:13px;color:var(--night-2);text-align:right}
+.shift .lbl{color:var(--night-2)}
+.shift-mid{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.shift-side{text-align:right}
+
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.qa{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 4px 10px;background:var(--surface);border:1px solid var(--line);border-radius:16px;font-size:12.5px;font-weight:700;line-height:1.2;text-align:center}
+.qa-ico,.a-ico,.r-ico,.doc-ico{display:grid;place-items:center;flex:none}
+.qa-ico{width:42px;height:42px;border-radius:50%}
+.t-pos{background:var(--pos-soft);color:var(--pos)} .t-neg{background:var(--neg-soft);color:var(--neg)} .t-warn{background:var(--warn-soft);color:var(--warn)}
+.t-ink{background:var(--surface-2);color:var(--ink)} .t-amber{background:var(--amber-soft);color:var(--amber-text)} .t-info{background:var(--info-soft);color:var(--info)}
+
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.val{font-family:var(--f-display);font-weight:700;font-stretch:90%;font-size:22px;line-height:1.15;margin-top:2px}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end}
+.bcol{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.bv{font-size:11px;color:var(--ink-2);height:14px;white-space:nowrap}
+.bar{display:block;width:100%;max-width:28px;border-radius:6px 6px 2px 2px;background:var(--ink-3)}
+.bcol.today .bar{background:var(--amber)}
+.bd{font-size:11px;color:var(--ink-3);font-weight:700}
+.bcol.today .bd{color:var(--ink)}
+.aside{display:flex;gap:10px;align-items:flex-start;background:var(--amber-soft);padding:10px 12px;border-radius:12px;font-size:14.5px}
+.aside .ico{color:var(--amber-text);flex:none;margin-top:1px}
+.metrics{display:flex;flex-wrap:wrap;gap:4px 14px}
+
+.alist{display:flex;flex-direction:column}
+.arow{display:grid;grid-template-columns:36px 1fr 18px;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line);width:100%}
+.arow:first-child{border-top:0;padding-top:0}
+.a-ico{width:36px;height:36px;border-radius:10px}
+.a-txt{min-width:0;display:flex;flex-direction:column}
+.a-txt b{font-size:15px}
+.a-txt span{font-size:13px;color:var(--ink-2)}
+.arow > .ico{color:var(--ink-3)}
+
+.plist{display:flex;flex-direction:column;gap:10px}
+.prow{display:grid;grid-template-columns:28px minmax(70px,auto) 1fr auto;gap:10px;align-items:center;font-size:14.5px}
+.mark{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-family:var(--f-display);font-weight:800;font-size:13px}
+.ptrack{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.ptrack span{display:block;height:100%;background:var(--ink-2);border-radius:4px}
+.pval{font-weight:700}
+
+/* ---------- activity */
+.sticky{position:sticky;top:0;z-index:4;background:var(--app);padding-block:8px;margin-block:-8px}
+.week{display:flex;flex-direction:column}
+.week-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:4px}
+.week-tot{display:flex;flex-direction:column;align-items:flex-end;font-family:var(--f-display);font-weight:700;font-size:18px}
+.week-tot .small{font-family:var(--f-body);font-weight:400}
+.day-head{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--ink-2);padding:14px 0 6px;border-bottom:1px solid var(--line)}
+.row{display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:10px 0;width:100%;border-bottom:1px solid var(--line)}
+.r-ico{width:40px;height:40px;border-radius:50%;font-family:var(--f-display);font-weight:800;font-size:16px}
+.r-txt{min-width:0;display:flex;flex-direction:column}
+.r-txt b{font-size:15px}
+.r-txt span{font-size:13px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-amt{font-family:var(--f-display);font-weight:700;font-size:16px}
+.empty{color:var(--ink-2);font-size:14.5px;padding:14px 0;text-align:center}
+
+/* ---------- tax */
+.taxhero{background:var(--night);color:var(--night-ink);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:10px}
+.taxhero .lbl{color:var(--night-2)}
+.huge{font-family:var(--f-display);font-weight:800;font-stretch:84%;font-size:52px;line-height:1;color:var(--amber);text-shadow:0 0 22px color-mix(in srgb,var(--amber) 35%,transparent)}
+.progress{height:6px;border-radius:3px;background:var(--night-line);overflow:hidden}
+.progress span{display:block;height:100%;background:var(--amber)}
+.taxhero .small{color:var(--night-2)}
+.taxhero-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:10px;border-top:1px solid var(--night-line)}
+.lines{display:flex;flex-direction:column}
+.line{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+.line span:first-child{min-width:0}
+.line .num{white-space:nowrap}
+.line.total{font-weight:700;border-bottom:0;border-top:2px solid var(--ink);margin-top:-1px}
+.line.sub-line{font-size:13.5px;color:var(--ink-2)}
+.fine{font-size:12.5px;color:var(--ink-3)}
+.steps{list-style:none;padding:0;position:relative;display:flex;flex-direction:column}
+.steps::before{content:"";position:absolute;left:13px;top:22px;bottom:22px;width:2px;background:var(--line)}
+.step{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:9px 0}
+.dot{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;background:var(--surface-2);color:var(--ink-2);box-shadow:0 0 0 3px var(--surface)}
+.step.sent .dot{background:var(--pos);color:var(--surface)}
+.step.due .dot{background:var(--amber);color:var(--amber-ink)}
+.step.open .dot{background:var(--ink);color:var(--surface)}
+.st-txt{min-width:0;display:flex;flex-direction:column}
+.st-txt b{font-size:15px}
+.st-txt span{font-size:13px;color:var(--ink-2)}
+.step.due .st-txt span{color:var(--warn);font-weight:700}
+.pay{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.pay:first-child{border-top:0}
+.pay-date{display:flex;flex-direction:column;align-items:center;background:var(--surface-2);border-radius:var(--r-sm);padding:6px 0}
+.pay-date b{font-family:var(--f-display);font-size:20px;line-height:1}
+.pay-date span{font-size:11px;font-weight:700;text-transform:uppercase;color:var(--ink-2)}
+.pay-txt{min-width:0;display:flex;flex-direction:column}
+.pay-txt span{font-size:13px;color:var(--ink-2)}
+.pay > .num{font-family:var(--f-display);font-weight:700;font-size:17px}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opt{border:1px solid var(--line);border-radius:var(--r-md);padding:12px;display:flex;flex-direction:column;gap:4px}
+.opt.win{border-color:var(--pos);background:var(--pos-soft)}
+.note{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);background:var(--surface-2);padding:10px 12px;border-radius:12px}
+.note .ico{flex:none;margin-top:1px}
+.gauge{position:relative;height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+.gauge span{display:block;height:100%;border-radius:5px;background:var(--pos)}
+.gauge.warn span{background:var(--warn)} .gauge.neg span{background:var(--neg)}
+
+/* ---------- vehicle */
+.veh-top{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.plate{display:inline-flex;align-items:stretch;border-radius:6px;overflow:hidden;border:2px solid var(--plate-ink);background:var(--plate);color:var(--plate-ink);font-family:var(--f-display);font-weight:800;font-stretch:78%;font-size:30px;line-height:1;letter-spacing:.03em}
+.plate-band{background:var(--plate-band);color:var(--plate-band-ink);font-size:10px;font-weight:700;font-stretch:100%;letter-spacing:.04em;display:flex;align-items:flex-end;padding:4px 5px}
+.plate-txt{padding:6px 12px 5px;white-space:nowrap}
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.specs dt{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
+.specs dd{font-weight:700;font-size:15px}
+.docrow{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line);width:100%}
+.docrow:first-child{border-top:0;padding-top:0}
+.doc-ico{width:36px;height:36px;border-radius:10px;background:var(--surface-2);color:var(--ink-2)}
+.doc-end{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.doc-end span:last-child{font-size:12px;color:var(--ink-2)}
+
+/* ---------- more */
+.profile{display:flex;gap:14px;align-items:center}
+.avatar{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:var(--night);color:var(--amber);font-family:var(--f-display);font-weight:800;font-size:22px;flex:none}
+.setting{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.setting:first-of-type{border-top:0;padding-top:0}
+.setting-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.setting-row b{font-size:15px}
+input[type=range]{width:100%;accent-color:var(--amber)}
+.input{width:100%;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:16px}
+textarea.input{padding:12px;font-family:ui-monospace,Consolas,monospace;font-size:13px;min-height:200px}
+.money-input{position:relative}
+.money-input span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--ink-2);font-weight:700}
+.money-input .input{padding-left:30px}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px}
+.btn-row .btn{flex:1 1 160px}
+
+/* ---------- bottom bar + fab */
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding:6px 4px 8px;z-index:6}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 2px;font-size:11.5px;font-weight:700;color:var(--ink-3);position:relative}
+.tab[aria-current="page"]{color:var(--ink)}
+.tab[aria-current="page"]::after{content:"";position:absolute;top:-7px;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--amber)}
+.fab{position:absolute;right:16px;bottom:86px;width:60px;height:60px;border-radius:50%;background:var(--amber);color:var(--amber-ink);display:grid;place-items:center;box-shadow:0 6px 18px color-mix(in srgb,var(--amber) 45%,transparent),0 2px 4px rgba(0,0,0,.2);z-index:8}
+.fab:active{transform:scale(.95)}
+
+/* ---------- sheet */
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;transition:opacity .22s;z-index:15}
+.scrim.open{opacity:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:94%;background:var(--surface);border-radius:22px 22px 0 0;transform:translateY(100%);transition:transform .26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;z-index:20;box-shadow:0 -10px 40px rgba(0,0,0,.2)}
+.sheet.open{transform:none}
+.sheet-grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:8px auto 2px;flex:none}
+.sheet-body{overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:14px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.sheet-head h2{font-size:20px}
+.meter{background:var(--night);border-radius:16px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.meter-lbl{color:var(--amber);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em}
+.meter-val{font-family:var(--f-display);font-weight:800;font-stretch:84%;font-size:42px;line-height:1.05;color:var(--amber);font-variant-numeric:tabular-nums;text-shadow:0 0 18px color-mix(in srgb,var(--amber) 40%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meter.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:14px;background:var(--surface)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip-date input{border:0;background:transparent;font-size:14px;font-weight:700;padding:0;min-width:0;width:128px}
+.cats{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:92px;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+.cat{scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 4px;border-radius:12px;border:1px solid var(--line);font-size:12px;font-weight:700;line-height:1.2;text-align:center;min-height:78px}
+.cat .ico{color:var(--ink-2)}
+.cat[aria-pressed="true"]{border-color:var(--ink);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--ink)}
+.cat[aria-pressed="true"] .ico{color:var(--ink)}
+.hint{font-size:13px;color:var(--ink-2)}
+.center{text-align:center}
+.stepper{display:flex;justify-content:space-between;align-items:center;background:var(--surface-2);border-radius:12px;padding:6px 6px 6px 14px}
+.stepper-ctl{display:flex;align-items:center;gap:6px}
+.stepper output{min-width:70px;text-align:center;font-family:var(--f-display);font-weight:700;font-size:20px}
+.receipt{display:flex;gap:10px;align-items:center;background:var(--surface-2);border-radius:12px;padding:8px 12px 8px 8px;font-weight:700;font-size:14px}
+.receipt img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+.receipt .link{margin-left:auto}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.key{height:52px;border-radius:12px;background:var(--surface-2);font-family:var(--f-display);font-size:24px;font-weight:600;display:grid;place-items:center}
+.key:active{background:var(--line)}
+.sheet-actions{display:flex;gap:8px;position:sticky;bottom:-16px;background:var(--surface);padding-block:8px 4px}
+.grow{flex:1}
+.field{display:flex;flex-direction:column;gap:6px}
+.toggle{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.toggle input{width:20px;height:20px;accent-color:var(--amber);margin-top:2px;flex:none}
+.photo-prev img{max-height:160px;border-radius:12px}
+.table{display:grid;grid-template-columns:1fr auto auto;gap:0 14px;font-size:14px}
+.table > *{padding:7px 0;border-bottom:1px solid var(--line)}
+.table .h{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2)}
+.table .r{text-align:right;white-space:nowrap}
+.table .b{font-weight:700}
+.reg-result{display:flex;flex-direction:column;gap:12px}
+
+/* date range (catch-up) */
+.range{display:flex;flex-direction:column;gap:10px;background:var(--surface-2);border-radius:14px;padding:12px}
+.range-dates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.range-dates .field{min-width:0}
+.range-dates .input{min-height:44px;padding:0 10px;font-size:15px}
+.range .seg{background:var(--surface)}
+.range .seg button{font-size:13px;padding:8px 4px}
+.range .seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.wd{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wd button{height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:13px;text-align:center}
+.wd button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.hint.bad{color:var(--neg);font-weight:700}
+#range-warn{display:flex;flex-direction:column;gap:6px}
+#range-warn:empty{display:none}
+.warn-line{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--warn)}
+.warn-line .ico{flex:none;margin-top:2px}
+.catchup{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.catchup .ico{flex:none;margin-top:2px;color:var(--amber-text)}
+
+.toast{position:absolute;left:16px;right:16px;bottom:90px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--ink);color:var(--surface);padding:12px 12px 12px 16px;border-radius:12px;font-weight:700;font-size:14.5px;z-index:30;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast-btn{flex:none;background:var(--amber);color:var(--amber-ink);padding:6px 12px;border-radius:8px;font-weight:800;font-size:14px}
+.toast.show{opacity:1;transform:none}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <aside class="intro" aria-label="About this prototype">
+    <span class="sign lit" style="align-self:flex-start">Kerbside</span>
+    <h1 class="intro-h">Takings, costs and tax, sorted on the rank.</h1>
+    <p>A money and tax app for UK taxi and private hire drivers. This clickable prototype is filled with sample data for a London PHV driver.</p>
+    <h2>Try it</h2>
+    <ul>
+      <li>Start a shift on Today, then end it to log your miles.</li>
+      <li>Tap the amber + and add a fare on the meter keypad.</li>
+      <li>Missed a few days? Pick Date range in the add sheet, or tap "Nothing logged" under Needs attention.</li>
+      <li>Open Tax and review the Making Tax Digital quarterly update.</li>
+      <li>Check licence and insurance reminders under Vehicle.</li>
+    </ul>
+    <p class="fine">Tax figures use 2026/27 rates. Nothing is sent to HMRC, DVLA or anyone else. Your changes stay in this browser.</p>
+  </aside>
+
+  <div class="app" id="app">
+    <main class="screen" id="screen" tabindex="-1"></main>
+    <button class="fab" id="fab" data-act="fab" aria-label="Add takings, a cost or a shift"></button>
+    <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+    <div class="scrim" id="scrim" data-act="close" hidden></div>
+    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+      <div class="sheet-grab"></div>
+      <div class="sheet-body" id="sheet-body"></div>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- dates (local, no UTC drift) */
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const diffDays = (a, b) => Math.round((b - a) / 864e5);
+const NOW = new Date();
+const TODAY = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+const TY = TODAY >= new Date(TODAY.getFullYear(), 3, 6) ? TODAY.getFullYear() : TODAY.getFullYear() - 1;
+const TY_START = new Date(TY, 3, 6), TY_END = new Date(TY + 1, 3, 5);
+const yl = y => `${y}/${pad((y + 1) % 100)}`;
+const TY_LABEL = yl(TY);
+const TY_DAYS = diffDays(TY_START, TY_END) + 1;
+const weekStart = w => addDays(TY_START, (w - 1) * 7);
+const CUR_WEEK = Math.floor(diffDays(TY_START, TODAY) / 7) + 1;
+const fmtD = (d, o) => d.toLocaleDateString('en-GB', o);
+const dShort = d => fmtD(d, {weekday: 'short', day: 'numeric', month: 'short'});
+const dDM = d => fmtD(d, {day: 'numeric', month: 'short'});
+const dLong = d => fmtD(d, {day: 'numeric', month: 'short', year: 'numeric'});
+const rangeLabel = (a, b) => {
+  const A = parse(a), B = parse(b);
+  if (a === b) return dDM(A);
+  return A.getMonth() === B.getMonth() && A.getFullYear() === B.getFullYear() ? `${A.getDate()}–${dDM(B)}` : `${dDM(A)}–${dDM(B)}`;
+};
+const fmtTime = ts => new Date(ts).toLocaleTimeString('en-GB', {hour: '2-digit', minute: '2-digit'});
+const inRange = (e, a, b) => e.date >= a && e.date <= b;
+
+/* ---------- money (integer pence) */
+const gbp = (p, dp = 2) => (p < 0 ? '−' : '') + '£' + (Math.abs(p) / 100).toLocaleString('en-GB', {minimumFractionDigits: dp, maximumFractionDigits: dp});
+const gbp0 = p => gbp(Math.round(p / 100) * 100, 0);
+const fmtHours = h => `${Number.isInteger(h) ? h : String(h.toFixed(2)).replace(/0$/, '')} h`;
+const strToPence = s => Math.round(parseFloat(s || '0') * 100) || 0;
+
+/* ---------- icons */
+const ICONS = {
+  home:'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+  list:'M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01',
+  pound:'M17 6.5A4 4 0 0 0 9.5 8v4.5c0 2.5-1 4.5-3 5.5H18M6.5 12.5h8',
+  car:'M3 13l2.5-6.5A2 2 0 0 1 7.4 5h9.2a2 2 0 0 1 1.9 1.5L21 13v5h-3v-2H6v2H3zM3 13h18M7 16h.01M17 16h.01',
+  more:'M5 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0M12 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0M19 12m-1 0a1 1 0 1 0 2 0a1 1 0 1 0-2 0',
+  plus:'M12 5v14M5 12h14',
+  x:'M6 6l12 12M18 6L6 18',
+  fuel:'M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8l3 3v6a1.5 1.5 0 0 0 3 0V9l-3-3',
+  bolt:'M13 2L4 14h7l-1 8 9-12h-7z',
+  key:'M14.5 9.5m-4.5 0a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0-9 0M11 13l-8 8M6 18l2 2M9 15l2 2',
+  shield:'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+  wrench:'M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z',
+  drop:'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+  zone:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M15 9.5a4 4 0 1 0 0 5',
+  parking:'M4 4h16v16H4zM9 17V7h4a3 3 0 0 1 0 6H9',
+  plane:'M10.5 4.5a1.5 1.5 0 0 1 3 0V10l7 4v2l-7-2v4l2 1.5V21l-3.5-1-3.5 1v-1.5l2-1.5v-4l-7 2v-2l7-4z',
+  badge:'M3 5h18v14H3zM8.5 10.5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M5.5 16c.6-1.6 1.7-2.5 3-2.5s2.4.9 3 2.5M14 9.5h4M14 13h4',
+  phone:'M8 2h8a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
+  percent:'M19 5L5 19M7 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0',
+  radio:'M3 9h18v11H3zM7 9l10-5M8 14.5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M14 13h4M14 16h4',
+  bank:'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18',
+  card:'M3 6h18v12H3zM3 10h18M7 15h3',
+  calc:'M6 3h12v18H6zM9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01',
+  camera:'M4 8h3l2-3h6l2 3h3v11H4zM12 13.5m-3.5 0a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0',
+  clock:'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2',
+  route:'M6 19m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M18 5m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0M8 19h7.5a3.5 3.5 0 0 0 0-7h-7a3.5 3.5 0 0 1 0-7H16',
+  chevR:'M9 18l6-6-6-6',
+  alert:'M12 3l10 18H2zM12 10v4M12 17.5h.01',
+  check:'M5 12l5 5L20 7',
+  receipt:'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h3',
+  send:'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+  copy:'M9 9h11v11H9zM5 15H4V4h11v1',
+  cash:'M3 7h18v10H3zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M6 10v4M18 10v4',
+  back:'M9 6h11v12H9l-6-6zM12.5 9.5l5 5M17.5 9.5l-5 5',
+  trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+  play:'M7 4l13 8-13 8z',
+  stop:'M6 6h12v12H6z',
+  doc:'M6 3h8l4 4v14H6zM14 3v4h4',
+  search:'M11 11m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-4-4',
+  users:'M9 8m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0M3 20c.8-3 3.2-5 6-5s5.2 2 6 5M16 5.5a3 3 0 0 1 0 5M18 15c1.6.6 2.6 2.4 3 5',
+  calendar:'M4 5h16v16H4zM4 10h16M9 3v4M15 3v4',
+};
+const ico = (n, s = 22) => `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICONS[n]}"/></svg>`;
+
+/* ---------- catalogues */
+const SOURCES = [
+  {id:'uber', label:'Uber', mark:'U'},
+  {id:'bolt', label:'Bolt', mark:'B'},
+  {id:'freenow', label:'FREENOW', mark:'F'},
+  {id:'cash', label:'Cash fares', mark:'£'},
+  {id:'card', label:'Card fares', mark:'C'},
+  {id:'account', label:'Account work', mark:'A'},
+  {id:'tips', label:'Tips', mark:'T'},
+];
+const SRC = Object.fromEntries(SOURCES.map(s => [s.id, s]));
+// hmrc = the expense line it lands on in Self Assessment / MTD. vehicle = running cost covered by the mileage rate.
+const CATS = [
+  {id:'charging', label:'EV charging', icon:'bolt', hmrc:'Car, van and travel', vehicle:true},
+  {id:'fuel', label:'Fuel', icon:'fuel', hmrc:'Car, van and travel', vehicle:true},
+  {id:'insurance', label:'Insurance', icon:'shield', hmrc:'Car, van and travel', vehicle:true},
+  {id:'repairs', label:'Repairs and tyres', icon:'wrench', hmrc:'Car, van and travel', vehicle:true},
+  {id:'rental', label:'Car hire', icon:'key', hmrc:'Car, van and travel', vehicle:true},
+  {id:'finance', label:'Car loan interest', icon:'bank', hmrc:'Interest on loans', vehicle:true},
+  {id:'wash', label:'Car wash', icon:'drop', hmrc:'Car, van and travel', vehicle:true},
+  {id:'congestion', label:'Congestion and ULEZ', icon:'zone', hmrc:'Car, van and travel', vehicle:false},
+  {id:'parking', label:'Parking and tolls', icon:'parking', hmrc:'Car, van and travel', vehicle:false},
+  {id:'airport', label:'Airport fees', icon:'plane', hmrc:'Car, van and travel', vehicle:false},
+  {id:'licence', label:'Licence fees', icon:'badge', hmrc:'Other business expenses', vehicle:false},
+  {id:'phone', label:'Phone and data', icon:'phone', hmrc:'Phone and office costs', vehicle:false},
+  {id:'commission', label:'Platform fees', icon:'percent', hmrc:'Other business expenses', vehicle:false},
+  {id:'circuit', label:'Radio or circuit rent', icon:'radio', hmrc:'Other business expenses', vehicle:false},
+  {id:'cardfees', label:'Card reader fees', icon:'card', hmrc:'Bank and card charges', vehicle:false},
+  {id:'accountant', label:'Accountancy', icon:'calc', hmrc:'Accountancy and legal', vehicle:false},
+  {id:'other', label:'Other', icon:'more', hmrc:'Other business expenses', vehicle:false},
+];
+const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
+const TABS = [
+  {id:'today', label:'Today', icon:'home'},
+  {id:'activity', label:'Activity', icon:'list'},
+  {id:'tax', label:'Tax', icon:'pound'},
+  {id:'vehicle', label:'Vehicle', icon:'car'},
+  {id:'more', label:'More', icon:'more'},
+];
+
+/* ---------- sample data */
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function seed() {
+  const r = rng(26042026);
+  const P = (a, b) => Math.round((a + r() * (b - a)) * 100);
+  const E = []; let n = 0;
+  const add = o => E.push({id: 's' + (++n), ...o});
+  const last = addDays(TODAY, -1);
+  const gapA = iso(addDays(TODAY, -10)), gapB = iso(addDays(TODAY, -8)); // days the sample driver forgot to log
+  for (let d = new Date(TY_START); d <= last; d = addDays(d, 1)) {
+    const ds = iso(d), dow = d.getDay(), dom = d.getDate();
+    if (dom === 1) {
+      add({type:'expense', cat:'insurance', amount:20500, date:ds, note:'Hire and reward cover, monthly', receipt:true});
+      add({type:'expense', cat:'finance', amount:7420, date:ds, note:'Car loan interest', receipt:true});
+    }
+    if (dom === 15) add({type:'expense', cat:'phone', amount:2200, date:ds, note:'Mobile contract', receipt:true});
+    if (ds >= gapA && ds <= gapB) continue;
+    if (dow === 2 || r() < 0.08) continue; // rest days
+    add({type:'income', src:'uber', amount:P(95, 185), date:ds});
+    if (r() < 0.6) add({type:'income', src:'bolt', amount:P(25, 75), date:ds});
+    if (r() < 0.25) add({type:'income', src:'freenow', amount:P(20, 60), date:ds});
+    if (r() < 0.2) add({type:'income', src:'cash', amount:P(15, 45), date:ds});
+    if (r() < 0.1) add({type:'income', src:'account', amount:P(40, 90), date:ds, note:'Airport transfer'});
+    if (dow === 0) add({type:'income', src:'tips', amount:P(10, 35), date:ds, note:'Weekly app tips'});
+    add({type:'shift', date:ds, hours:Math.round((8 + r() * 3) * 4) / 4, miles:Math.round(118 + r() * 58)});
+    if (r() < 0.7) add({type:'expense', cat:'charging', amount:P(9, 24), date:ds, note:'Rapid charger', receipt:r() < 0.8});
+    if (r() < 0.25) add({type:'expense', cat:'congestion', amount:1800, date:ds, note:'Congestion Charge', receipt:true});
+    if (r() < 0.15) add({type:'expense', cat:'parking', amount:P(3, 8), date:ds, receipt:r() < 0.5});
+    if (r() < 0.15) add({type:'expense', cat:'airport', amount:700, date:ds, note:'Heathrow drop-off', receipt:true});
+    if (dow === 6) add({type:'expense', cat:'wash', amount:P(8, 12), date:ds, receipt:false});
+  }
+  const once = (off, o) => { const d = addDays(TY_START, off); if (d < TODAY) add({...o, date: iso(d)}); };
+  once(58, {type:'expense', cat:'repairs', amount:18600, note:'Two front tyres', receipt:true});
+  once(124, {type:'expense', cat:'repairs', amount:14800, note:'Annual service', receipt:true});
+  const exp = n => iso(addDays(TODAY, n));
+  return {
+    v: 2, ty: TY, entries: E, shift: null, mtdSent: {}, daysOff: [],
+    settings: {name:'Sam', region:'ruk', bizPct:92, phonePct:70, lastBill:738000, prevTurnover:5498000, theme:'system'},
+    docs: [
+      {id:'ins', label:'Hire and reward insurance', who:'Your insurer', exp:exp(9), remind:true, icon:'shield'},
+      {id:'pdl', label:'PHV driver licence', who:'Transport for London', exp:exp(23), remind:true, icon:'badge'},
+      {id:'mot', label:'MOT certificate', who:'DVSA test centre', exp:exp(113), remind:true, icon:'wrench'},
+      {id:'pvl', label:'PHV vehicle licence', who:'Transport for London', exp:exp(157), remind:true, icon:'car'},
+      {id:'ved', label:'Vehicle tax (VED)', who:'DVLA', exp:exp(172), remind:true, icon:'doc'},
+      {id:'dbs', label:'Enhanced DBS check', who:'Disclosure and Barring Service', exp:exp(412), remind:true, icon:'users'},
+      {id:'med', label:'Group 2 medical', who:'Your GP', exp:exp(604), remind:true, icon:'doc'},
+    ],
+  };
+}
+
+/* ---------- storage (best effort; the page works without it) */
+const KEY = 'kerbside-proto-v2';
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 2 && s.ty === TY) return s; } catch (e) {} return null; }
+let warned = false;
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { if (!warned) { warned = true; toast("This browser isn't keeping changes. They'll reset when you reload."); } } }
+
+let S = load() || seed();
+const ui = {tab: 'today', weeks: 3, filter: 'all'};
+const HOST_THEME = document.documentElement.getAttribute('data-theme');
+
+/* ---------- maths */
+function totals(list) {
+  let inc = 0, exp = 0, hours = 0, miles = 0; const bySrc = {}, byCat = {};
+  for (const e of list) {
+    if (e.type === 'income') { inc += e.amount; bySrc[e.src] = (bySrc[e.src] || 0) + e.amount; }
+    else if (e.type === 'expense') { exp += e.amount; byCat[e.cat] = (byCat[e.cat] || 0) + e.amount; }
+    else if (e.type === 'shift') { hours += e.hours; miles += e.miles; }
+  }
+  return {inc, exp, hours, miles, bySrc, byCat, net: inc - exp};
+}
+// 2026/27 bands on taxable income (after the £12,570 personal allowance)
+const BANDS = {
+  ruk:  [[37700, .20], [87440, .40], [Infinity, .45]],
+  scot: [[3967, .19], [12989, .20], [14136, .21], [31338, .42], [62710, .45], [Infinity, .48]],
+};
+function incomeTax(profitP, region) {
+  const profit = profitP / 100;
+  let pa = 12570; if (profit > 100000) pa = Math.max(0, pa - (profit - 100000) / 2);
+  let left = Math.max(0, profit - pa), tax = 0;
+  for (const [w, rate] of BANDS[region]) { const t = Math.min(left, w); tax += t * rate; left -= t; if (left <= 0) break; }
+  return Math.round(tax * 100);
+}
+function class4(profitP) {
+  const p = profitP / 100;
+  return Math.round((Math.max(0, Math.min(p, 50270) - 12570) * .06 + Math.max(0, p - 50270) * .02) * 100);
+}
+const mileageRate = mi => Math.round(Math.min(mi, 10000) * 45 + Math.max(0, mi - 10000) * 25);
+function yearModel() {
+  const t = totals(S.entries.filter(e => inRange(e, iso(TY_START), iso(TODAY))));
+  const biz = S.settings.bizPct / 100, ph = S.settings.phonePct / 100;
+  let vehicle = 0, phone = 0;
+  for (const [c, v] of Object.entries(t.byCat)) { if (CAT[c].vehicle) vehicle += v; else if (c === 'phone') phone += v; }
+  const privateAdj = Math.round(vehicle * (1 - biz) + phone * (1 - ph));
+  const allowable = t.exp - privateAdj;
+  const profit = t.inc - allowable;
+  const elapsed = diffDays(TY_START, TODAY) + 1;
+  const frac = Math.min(1, elapsed / TY_DAYS);
+  const projProfit = Math.round(profit / frac);
+  const it = incomeTax(projProfit, S.settings.region), ni = class4(projProfit);
+  const projTax = it + ni;
+  return {...t, vehicle, phone, privateAdj, allowable, profit, elapsed, frac, projProfit,
+    projTurnover: Math.round(t.inc / frac), it, ni, projTax, builtUp: Math.round(projTax * frac), weekly: Math.round(projTax / 52)};
+}
+function quarters() {
+  const Y = TY;
+  return [
+    {n:1, a:new Date(Y, 3, 6), b:new Date(Y, 6, 5), due:new Date(Y, 7, 7)},
+    {n:2, a:new Date(Y, 6, 6), b:new Date(Y, 9, 5), due:new Date(Y, 10, 7)},
+    {n:3, a:new Date(Y, 9, 6), b:new Date(Y + 1, 0, 5), due:new Date(Y + 1, 1, 7)},
+    {n:4, a:new Date(Y + 1, 0, 6), b:new Date(Y + 1, 3, 5), due:new Date(Y + 1, 4, 7)},
+  ].map(q => {
+    const key = `${Y}-Q${q.n}`;
+    let sent = S.mtdSent[key], status;
+    if (TODAY < q.a) status = 'future';
+    else if (TODAY <= q.b) status = 'open';
+    else if (sent) status = 'sent';
+    else if (TODAY > q.due) { status = 'sent'; sent = iso(addDays(q.due, -5)); } // sample: earlier quarters were filed on time
+    else status = 'due';
+    return {...q, key, sent, status};
+  });
+}
+const mtdLimit = TY <= 2026 ? 50000 : TY === 2027 ? 30000 : 20000;
+function docState(d) {
+  const n = diffDays(TODAY, parse(d.exp));
+  if (n < 0) return {n, tone:'neg', label:'Expired', when:`${-n} days ago`};
+  if (n <= 14) return {n, tone:'neg', label:'Renew now', when: n === 0 ? 'Today' : `${n} days`};
+  if (n <= 45) return {n, tone:'warn', label:'Due soon', when:`${n} days`};
+  return {n, tone:'pos', label:'Valid', when: n > 90 ? `${Math.round(n / 30.4)} months` : `${n} days`};
+}
+// Runs of 3+ days in the last 3 weeks with no takings or shift logged (and not marked as days off).
+function gaps() {
+  const has = new Set(S.daysOff || []);
+  for (const e of S.entries) {
+    if (e.type !== 'income' && e.type !== 'shift') continue;
+    if (e.from) for (let d = parse(e.from); d <= parse(e.date); d = addDays(d, 1)) has.add(iso(d));
+    else has.add(e.date);
+  }
+  const runs = []; let cur = null;
+  for (let i = 21; i >= 0; i--) {
+    const d = addDays(TODAY, -i), ds = iso(d);
+    if (i > 0 && d >= TY_START && !has.has(ds)) { if (!cur) cur = {from: ds, n: 0}; cur.to = ds; cur.n++; }
+    else { if (cur && cur.n >= 3) runs.push(cur); cur = null; }
+  }
+  return runs;
+}
+function alerts() {
+  const out = [];
+  const q = quarters().find(x => x.status === 'due');
+  if (q) { const n = diffDays(TODAY, q.due); out.push({tone: n <= 14 ? 't-neg' : 't-warn', icon:'send', title:`Send your Q${q.n} update to HMRC`, sub:`Making Tax Digital · due ${dDM(q.due)}, ${n} days left`, act:'mtd', v:q.key}); }
+  for (const g of gaps()) out.push({tone:'t-warn', icon:'calendar', title:`Nothing logged ${rangeLabel(g.from, g.to)}`, sub:`${g.n} days with no takings. Add them in one go.`, act:'catchup', v:`${g.from}_${g.to}`});
+  for (const d of [...S.docs].sort((a, b) => a.exp < b.exp ? -1 : 1)) {
+    const st = docState(d);
+    if (st.n <= 30) out.push({tone: st.tone === 'neg' ? 't-neg' : 't-warn', icon:d.icon, title: st.n < 0 ? `${d.label} has expired` : `${d.label} expires in ${st.n} days`, sub:`${dLong(parse(d.exp))} · ${d.who}`, act:'doc', v:d.id});
+  }
+  const cutoff = iso(addDays(TODAY, -14));
+  const miss = S.entries.filter(e => e.type === 'expense' && e.date >= cutoff && !e.receipt && e.amount >= 1000).length;
+  if (miss) out.push({tone:'t-info', icon:'receipt', title:`${miss} recent ${miss === 1 ? 'cost has' : 'costs have'} no receipt`, sub:'HMRC can ask to see receipts for up to 5 years', act:'receipts', v:''});
+  return out;
+}
+
+/* ---------- views */
+const VIEWS = {};
+const head = (title, sub, right = '') => `<header class="scr-head"><div><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>${right}</header>`;
+const line = (l, v, cls = '') => `<div class="line ${cls}"><span>${l}</span><span class="num">${v}</span></div>`;
+const qa = (act, mode, label, icon, tone) => `<button class="qa" data-act="${act}"${mode ? ` data-mode="${mode}"` : ''}><span class="qa-ico ${tone}">${ico(icon)}</span><span>${label}</span></button>`;
+const elapsed = () => { const m = Math.max(0, Math.floor((Date.now() - S.shift.start) / 60000)); return `${Math.floor(m / 60)}h ${pad(m % 60)}m`; };
+
+VIEWS.today = () => {
+  const m = yearModel();
+  const from = addDays(TODAY, -6);
+  const wkList = S.entries.filter(e => inRange(e, iso(from), iso(TODAY)));
+  const wk = totals(wkList);
+  const td = totals(S.entries.filter(e => e.date === iso(TODAY)));
+  const eff = m.projProfit > 0 ? m.projTax / m.projProfit : 0;
+  const aside = Math.max(0, Math.round(wk.net * eff));
+  const days = [...Array(7)].map((_, i) => { const d = addDays(from, i), ds = iso(d); let inc = 0; for (const e of wkList) if (e.date === ds && e.type === 'income') inc += e.amount; return {d, ds, inc}; });
+  const max = Math.max(1, ...days.map(x => x.inc));
+  const on = !!S.shift;
+  const src = Object.entries(wk.bySrc).sort((a, b) => b[1] - a[1]);
+  const smax = src.length ? src[0][1] : 1;
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Morning' : hr < 18 ? 'Afternoon' : 'Evening';
+  const al = alerts();
+  const perMile = wk.miles ? Math.round(wk.net / wk.miles) : 0;
+  return `
+  <header class="scr-head">
+    <div><p class="eyebrow">${fmtD(TODAY, {weekday:'long', day:'numeric', month:'long'})}</p><h1>${greet}, ${esc(S.settings.name)}</h1></div>
+    <span class="pill">Tax week ${CUR_WEEK}</span>
+  </header>
+
+  <section class="shift${on ? ' on' : ''}" aria-label="Shift">
+    <div class="shift-top">
+      <span class="sign">${on ? 'On shift' : 'Off shift'}</span>
+      <span class="shift-note">${on ? `Started ${fmtTime(S.shift.start)}` : 'Track hours to see your hourly rate'}</span>
+    </div>
+    <div class="shift-mid">
+      <div><p class="lbl">Takings today</p><p class="big num">${gbp(td.inc)}</p></div>
+      <div class="shift-side"><p class="lbl">${on ? 'On the clock' : 'Logged today'}</p><p class="mid num" id="shift-elapsed">${on ? elapsed() : fmtHours(td.hours)}</p></div>
+    </div>
+    <button class="btn btn-block ${on ? 'btn-night' : 'btn-amber'}" data-act="shift">${ico(on ? 'stop' : 'play', 18)}<span>${on ? 'End shift and log miles' : 'Start shift'}</span></button>
+  </section>
+
+  <div class="quick">
+    ${qa('add', 'income', 'Add takings', 'cash', 't-pos')}
+    ${qa('add', 'expense', 'Add a cost', 'receipt', 't-neg')}
+    ${qa('add', 'shift', 'Log a shift', 'route', 't-ink')}
+    ${qa('snap', '', 'Snap receipt', 'camera', 't-amber')}
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h2>Last 7 days</h2><span class="muted small">${dDM(from)} to ${dDM(TODAY)}</span></div>
+    <div class="trio">
+      <div><p class="lbl">Takings</p><p class="val num">${gbp0(wk.inc)}</p></div>
+      <div><p class="lbl">Costs</p><p class="val num">${gbp0(wk.exp)}</p></div>
+      <div><p class="lbl">Profit</p><p class="val num ${wk.net < 0 ? 'neg' : 'pos'}">${gbp0(wk.net)}</p></div>
+    </div>
+    <div class="bars" role="img" aria-label="Takings per day for the last 7 days">
+      ${days.map(x => `<div class="bcol${x.ds === iso(TODAY) ? ' today' : ''}"><span class="bv num">${x.inc ? gbp0(x.inc) : ''}</span><span class="bar" style="height:${Math.max(3, Math.round(x.inc / max * 64))}px"></span><span class="bd">${x.ds === iso(TODAY) ? 'Today' : fmtD(x.d, {weekday:'short'})}</span></div>`).join('')}
+    </div>
+    <div class="aside">${ico('pound', 18)}<p>Set aside <b class="num">${gbp0(aside)}</b> for tax from these 7 days. That keeps your ${TY_LABEL} bill covered.</p></div>
+    ${wk.hours ? `<p class="metrics muted small"><span>${gbp(Math.round(wk.net / wk.hours))} profit an hour</span><span>${perMile < 100 ? perMile + 'p' : gbp(perMile)} a mile</span><span>${fmtHours(wk.hours)} on shift</span></p>` : ''}
+  </section>
+
+  ${al.length ? `<section class="card">
+    <div class="card-head"><h2>Needs attention</h2><span class="count">${al.length}</span></div>
+    <div class="alist">${al.map(a => `<button class="arow" data-act="${a.act}" data-v="${a.v}"><span class="a-ico ${a.tone}">${ico(a.icon, 18)}</span><span class="a-txt"><b>${a.title}</b><span>${a.sub}</span></span>${ico('chevR', 18)}</button>`).join('')}</div>
+  </section>` : ''}
+
+  ${src.length ? `<section class="card">
+    <div class="card-head"><h2>Where it came from</h2><span class="muted small">Last 7 days</span></div>
+    <div class="plist">${src.map(([id, v]) => `<div class="prow"><span class="mark">${SRC[id].mark}</span><span>${SRC[id].label}</span><span class="ptrack"><span style="width:${Math.round(v / smax * 100)}%"></span></span><span class="pval num">${gbp0(v)}</span></div>`).join('')}</div>
+  </section>` : ''}`;
+};
+
+const typeRank = {income: 0, expense: 1, shift: 2};
+const sortEntries = (a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : (typeRank[a.type] - typeRank[b.type]) || ((b.amount || 0) - (a.amount || 0));
+function rowHTML(e) {
+  const period = e.from ? `${rangeLabel(e.from, e.date)} total${e.note ? ' · ' : ''}` : '';
+  if (e.type === 'income') { const s = SRC[e.src];
+    return `<button class="row" data-act="edit" data-v="${e.id}"><span class="r-ico t-pos">${s.mark}</span><span class="r-txt"><b>${s.label}</b><span>${period}${esc(e.note || (period ? '' : 'Takings'))}</span></span><span class="r-amt num pos">+${gbp(e.amount)}</span></button>`; }
+  if (e.type === 'expense') { const c = CAT[e.cat];
+    return `<button class="row" data-act="edit" data-v="${e.id}"><span class="r-ico t-ink">${ico(c.icon, 18)}</span><span class="r-txt"><b>${c.label}</b><span>${period}${esc(e.note || (period ? '' : c.hmrc))}${e.receipt ? ' · receipt saved' : ''}</span></span><span class="r-amt num">−${gbp(e.amount)}</span></button>`; }
+  return `<button class="row" data-act="edit" data-v="${e.id}"><span class="r-ico t-amber">${ico('clock', 18)}</span><span class="r-txt"><b>Shift</b><span>${e.miles} business miles${e.note ? ' · ' + esc(e.note) : ''}</span></span><span class="r-amt num muted">${fmtHours(e.hours)}</span></button>`;
+}
+VIEWS.activity = () => {
+  const lo = Math.max(1, CUR_WEEK - ui.weeks + 1);
+  let html = '';
+  for (let w = CUR_WEEK; w >= lo; w--) {
+    const ws = weekStart(w), we = addDays(ws, 6);
+    const all = S.entries.filter(e => inRange(e, iso(ws), iso(we)));
+    const t = totals(all);
+    const list = all.filter(e => ui.filter === 'all' || e.type === ui.filter).sort(sortEntries);
+    html += `<section class="week"><div class="week-head"><div><h2>Week ${w}</h2><p class="muted small">${dDM(ws)} to ${dDM(we)}</p></div><div class="week-tot"><span class="num">${gbp0(t.inc)}</span><span class="muted small">profit ${gbp0(t.net)}</span></div></div>`;
+    if (!list.length) html += `<p class="empty">${w === CUR_WEEK && !all.length ? 'Nothing logged this week yet. Tap + to add your first fare.' : 'Nothing here for this filter.'}</p>`;
+    else {
+      let day = null;
+      for (const e of list) {
+        if (e.date !== day) {
+          day = e.date;
+          const dt = totals(all.filter(x => x.date === day));
+          html += `<div class="day-head"><span>${dShort(parse(day))}</span><span class="num">${dt.net >= 0 ? '+' : ''}${gbp(dt.net)}</span></div>`;
+        }
+        html += rowHTML(e);
+      }
+    }
+    html += '</section>';
+  }
+  const seg = [['all', 'All'], ['income', 'Takings'], ['expense', 'Costs'], ['shift', 'Shifts']]
+    .map(([v, l]) => `<button data-act="filter" data-v="${v}" aria-pressed="${ui.filter === v}">${l}</button>`).join('');
+  return head('Activity', `Every fare, cost and shift in ${TY_LABEL}`) +
+    `<div class="sticky"><div class="seg" role="group" aria-label="Show">${seg}</div></div>` + html +
+    (lo > 1 ? `<button class="btn btn-quiet btn-block" data-act="earlier">Show earlier weeks</button>` : `<p class="empty">That's everything since ${dDM(TY_START)}.</p>`);
+};
+
+VIEWS.tax = () => {
+  const m = yearModel();
+  const scot = S.settings.region === 'scot';
+  const qs = quarters();
+  const last = S.settings.lastBill, poa = last > 100000 ? Math.round(last / 2) : 0;
+  const bal = Math.max(0, m.projTax - 2 * poa);
+  const simp = mileageRate(m.miles);
+  const actual = Math.round(m.vehicle * S.settings.bizPct / 100);
+  const vatPct = Math.round(m.projTurnover / 9000000 * 100);
+  const prev = S.settings.prevTurnover;
+  const byH = {};
+  for (const [c, v] of Object.entries(m.byCat)) byH[CAT[c].hmrc] = (byH[CAT[c].hmrc] || 0) + v;
+  const qText = q => q.status === 'sent' ? `Sent ${dDM(parse(q.sent))}` : q.status === 'due' ? `Due ${dDM(q.due)} · ${diffDays(TODAY, q.due)} days left` : q.status === 'open' ? `In progress · due ${dDM(q.due)}` : `Starts ${dDM(q.a)}`;
+  return `
+  ${head(`Tax ${TY_LABEL}`, `${dLong(TY_START)} to ${dLong(TY_END)}`)}
+  <section class="taxhero">
+    <p class="lbl">Projected tax and National Insurance</p>
+    <p class="huge num">${gbp0(m.projTax)}</p>
+    <div class="progress" aria-hidden="true"><span style="width:${Math.round(m.frac * 100)}%"></span></div>
+    <p class="small">Day ${m.elapsed} of ${TY_DAYS}. About ${gbp0(m.builtUp)} has built up so far.</p>
+    <div class="taxhero-row">
+      <div><p class="lbl">Set aside a week</p><p class="mid num">${gbp0(m.weekly)}</p></div>
+      <div><p class="lbl">Final deadline</p><p class="mid">31 Jan ${TY + 2}</p></div>
+    </div>
+  </section>
+  <div class="seg" role="group" aria-label="Where you live for tax">
+    <button data-act="region" data-v="ruk" aria-pressed="${!scot}">England, Wales, NI</button>
+    <button data-act="region" data-v="scot" aria-pressed="${scot}">Scotland</button>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h2>How we worked it out</h2><span class="muted small">So far</span></div>
+    <div class="lines">
+      ${line('Takings', gbp(m.inc))}
+      ${line('Costs logged', '−' + gbp(m.exp))}
+      ${line(`Private use added back (${100 - S.settings.bizPct}% of car, ${100 - S.settings.phonePct}% of phone)`, '+' + gbp(m.privateAdj), 'sub-line')}
+      ${line('Capital allowances', '£0.00', 'sub-line')}
+      ${line('Profit so far', gbp(m.profit), 'total')}
+    </div>
+    <div class="lines">
+      ${line('Full-year profit if you keep this pace', gbp0(m.projProfit))}
+      ${line('Income tax', gbp0(m.it))}
+      ${line('Class 4 National Insurance', gbp0(m.ni))}
+      ${line('Projected bill', gbp0(m.projTax), 'total')}
+    </div>
+    <p class="fine">${scot
+      ? '2026/27 Scottish rates: personal allowance £12,570, then 19% starter, 20% basic, 21% intermediate from £29,527, 42% higher from £43,663. Class 4 NI is UK-wide: 6% from £12,570 to £50,270, then 2%.'
+      : '2026/27 rates: personal allowance £12,570, income tax 20% up to £50,270 and 40% above. Class 4 NI 6% from £12,570 to £50,270, then 2%.'} The car's capital allowance was claimed in full in 2023/24.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Making Tax Digital</h2><span class="pill ${prev > mtdLimit * 100 ? 'pos' : ''}">${prev > mtdLimit * 100 ? 'Applies to you' : 'Not yet'}</span></div>
+    <p class="small muted">Your ${yl(TY - 2)} takings were ${gbp0(prev)}, over the £${mtdLimit.toLocaleString('en-GB')} limit, so you send HMRC an update every quarter.${TY <= 2026 ? ' The limit falls to £30,000 in April 2027 and £20,000 in April 2028.' : ''}</p>
+    <ol class="steps">
+      ${qs.map(q => `<li class="step ${q.status}"><span class="dot">${q.status === 'sent' ? ico('check', 14) : q.n}</span><div class="st-txt"><b>Q${q.n} · ${dDM(q.a)} to ${dDM(q.b)}</b><span>${qText(q)}</span></div>${q.status === 'due' || q.status === 'sent' ? `<button class="btn-sm${q.status === 'due' ? ' amber' : ''}" data-act="mtd" data-v="${q.key}">${q.status === 'due' ? 'Review' : 'View'}</button>` : ''}</li>`).join('')}
+      <li class="step future"><span class="dot">${ico('doc', 14)}</span><div class="st-txt"><b>Final declaration</b><span>Confirm the year by 31 Jan ${TY + 2}</span></div></li>
+    </ol>
+    ${TY === 2026 ? '<p class="fine">HMRC is not giving penalty points for late quarterly updates in 2026/27. The final declaration deadline still applies.</p>' : ''}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Payments to HMRC</h2></div>
+    ${poa ? `<p class="small muted">Your ${yl(TY - 1)} bill was ${gbp0(last)}, so HMRC asks for two payments on account toward ${TY_LABEL}. Each is half of last year's bill.</p>
+    <div>
+      <div class="pay"><div class="pay-date"><b>31</b><span>Jan ${TY + 1}</span></div><div class="pay-txt"><b>1st payment on account</b><span>Plus anything still owed for ${yl(TY - 1)}</span></div><span class="num">${gbp0(poa)}</span></div>
+      <div class="pay"><div class="pay-date"><b>31</b><span>Jul ${TY + 1}</span></div><div class="pay-txt"><b>2nd payment on account</b><span>Same amount as January</span></div><span class="num">${gbp0(poa)}</span></div>
+      <div class="pay"><div class="pay-date"><b>31</b><span>Jan ${TY + 2}</span></div><div class="pay-txt"><b>Balancing payment</b><span>Estimate, based on this year so far</span></div><span class="num">${gbp0(bal)}</span></div>
+    </div>` : `<p class="small muted">Last year's bill was under £1,000, so there are no payments on account. Pay the full ${TY_LABEL} bill by 31 Jan ${TY + 2}.</p>`}
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Car costs: which method?</h2><span class="muted small">So far</span></div>
+    <div class="compare">
+      <div class="opt${actual >= simp ? ' win' : ''}"><p class="lbl">Actual costs</p><p class="val num">${gbp0(actual)}</p><p class="small muted">${S.settings.bizPct}% of charging, insurance, repairs and loan interest</p></div>
+      <div class="opt${simp > actual ? ' win' : ''}"><p class="lbl">Mileage rate</p><p class="val num">${gbp0(simp)}</p><p class="small muted">${m.miles.toLocaleString('en-GB')} miles at 45p, then 25p after 10,000</p></div>
+    </div>
+    <p class="note">${ico('alert', 16)}<span>You claimed capital allowances on the Kia Niro, so HMRC keeps you on actual costs for this car. Compare again when you change car.</span></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>VAT threshold</h2><span class="pill ${vatPct < 80 ? 'pos' : vatPct < 100 ? 'warn' : 'neg'}">${vatPct}% of £90,000</span></div>
+    <div class="gauge${vatPct >= 100 ? ' neg' : vatPct >= 80 ? ' warn' : ''}" role="img" aria-label="${vatPct}% of the VAT threshold"><span style="width:${Math.min(100, vatPct)}%"></span></div>
+    <p class="small muted">On pace for ${gbp0(m.projTurnover)} of takings this year. You must register for VAT if takings in any 12 months go over £90,000. Taxi fares are standard-rated.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Costs by HMRC category</h2><span class="muted small">So far</span></div>
+    <div class="lines">${Object.entries(byH).sort((a, b) => b[1] - a[1]).map(([k, v]) => line(k, gbp(v))).join('')}${line('Total costs', gbp(m.exp), 'total')}</div>
+  </section>`;
+};
+
+VIEWS.vehicle = () => {
+  const m = yearModel();
+  const docs = [...S.docs].sort((a, b) => a.exp < b.exp ? -1 : 1);
+  const shifts = S.entries.filter(e => e.type === 'shift' && e.date >= iso(TY_START)).length;
+  return `
+  ${head('Vehicle', 'Your car, licences and renewal dates')}
+  <section class="card">
+    <div class="veh-top">
+      <span class="plate" aria-label="Registration LT24 KRB"><span class="plate-band">UK</span><span class="plate-txt">LT24 KRB</span></span>
+      <div><h2>Kia Niro EV</h2><p class="muted small">Electric · first registered Feb 2024</p></div>
+    </div>
+    <dl class="specs">
+      <div><dt>CO₂</dt><dd>0 g/km</dd></div>
+      <div><dt>Business use</dt><dd>${S.settings.bizPct}%</dd></div>
+      <div><dt>ULEZ</dt><dd>Compliant</dd></div>
+      <div><dt>Capital allowance</dt><dd>100% claimed</dd></div>
+    </dl>
+    <p class="note">${ico('check', 16)}<span>Zero-emission cars bought new get a 100% first-year allowance until 5 April 2027. You claimed it in 2023/24.</span></p>
+    <button class="btn btn-quiet btn-block" data-act="reg">${ico('search', 18)}<span>Look up another registration</span></button>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Licences and documents</h2></div>
+    <div>${docs.map(d => { const st = docState(d); return `<button class="docrow" data-act="doc" data-v="${d.id}"><span class="doc-ico">${ico(d.icon, 18)}</span><span class="a-txt"><b>${d.label}</b><span>${dLong(parse(d.exp))}${d.photo ? ' · photo saved' : ''}</span></span><span class="doc-end"><span class="pill ${st.tone}">${st.label}</span><span>${st.when}</span></span></button>`; }).join('')}</div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Miles this tax year</h2></div>
+    <div class="trio">
+      <div><p class="lbl">Business</p><p class="val num">${m.miles.toLocaleString('en-GB')}</p></div>
+      <div><p class="lbl">Shifts</p><p class="val num">${shifts}</p></div>
+      <div><p class="lbl">Per shift</p><p class="val num">${shifts ? Math.round(m.miles / shifts) : 0}</p></div>
+    </div>
+  </section>`;
+};
+
+function ucMonth() {
+  const a = new Date(TODAY.getFullYear(), TODAY.getMonth() - 1, 1), b = new Date(TODAY.getFullYear(), TODAY.getMonth(), 0);
+  return {a, b, t: totals(S.entries.filter(e => inRange(e, iso(a), iso(b))))};
+}
+VIEWS.more = () => {
+  const s = S.settings, uc = ucMonth(), th = s.theme;
+  return `
+  ${head('More', '')}
+  <section class="card">
+    <div class="profile"><span class="avatar">${esc(s.name[0] || 'S')}</span><div><h2>${esc(s.name)} Carter</h2><p class="muted small">Self-employed PHV driver · London</p></div></div>
+    <dl class="specs">
+      <div><dt>UTR</dt><dd class="num">••••• •4821</dd></div>
+      <div><dt>NI number</dt><dd class="num">QQ 12 34 56 C</dd></div>
+      <div><dt>Licensed by</dt><dd>Transport for London</dd></div>
+      <div><dt>Accounts</dt><dd>Cash basis</dd></div>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Tax setup</h2>
+    <div class="setting"><b>Where you live</b>
+      <div class="seg" role="group" aria-label="Where you live for tax"><button data-act="region" data-v="ruk" aria-pressed="${s.region === 'ruk'}">England, Wales, NI</button><button data-act="region" data-v="scot" aria-pressed="${s.region === 'scot'}">Scotland</button></div>
+    </div>
+    <div class="setting"><div class="setting-row"><label for="biz-pct"><b>Business use of car</b></label><output id="biz-out" class="num">${s.bizPct}%</output></div><input type="range" id="biz-pct" min="50" max="100" value="${s.bizPct}"></div>
+    <div class="setting"><div class="setting-row"><label for="phone-pct"><b>Business use of phone</b></label><output id="phone-out" class="num">${s.phonePct}%</output></div><input type="range" id="phone-pct" min="0" max="100" value="${s.phonePct}"></div>
+    <div class="setting"><label for="last-bill"><b>Last year's tax and NI bill</b></label><div class="money-input"><span>£</span><input class="input num" id="last-bill" inputmode="decimal" value="${(s.lastBill / 100).toFixed(2)}"></div><p class="hint">Used to work out your payments on account.</p></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Universal Credit</h2><span class="muted small">${fmtD(uc.a, {month:'long', year:'numeric'})}</span></div>
+    <div class="lines">${line('Money in from driving', gbp(uc.t.inc))}${line('Business costs paid', '−' + gbp(uc.t.exp))}${line('Self-employed earnings', gbp(uc.t.net), 'total')}</div>
+    <p class="hint">Universal Credit counts money in and out during each monthly assessment period. Check the dates match yours before you report.</p>
+    <button class="btn btn-quiet btn-block" data-act="uc">${ico('copy', 18)}<span>Copy figures for your journal</span></button>
+  </section>
+
+  <section class="card">
+    <h2>Your records</h2>
+    <div class="btn-row">
+      <button class="btn btn-quiet" data-act="csv">${ico('copy', 18)}<span>Copy as CSV</span></button>
+      <button class="btn btn-quiet" disabled>${ico('users', 18)}<span>Invite accountant</span></button>
+    </div>
+    <p class="hint">The CSV lists every entry with its HMRC category, ready for a spreadsheet or your accountant.</p>
+  </section>
+
+  <section class="card">
+    <h2>Appearance</h2>
+    <div class="seg" role="group" aria-label="Theme">${[['system', 'Automatic'], ['light', 'Day'], ['dark', 'Night']].map(([v, l]) => `<button data-act="theme" data-v="${v}" aria-pressed="${th === v}">${l}</button>`).join('')}</div>
+  </section>
+
+  <button class="btn btn-danger btn-block" data-act="reset"><span>Reset sample data</span></button>
+  <p class="fine center">Kerbside prototype. Sample data only. Nothing is sent to HMRC.</p>`;
+};
+
+/* ---------- render */
+function buildTabbar() {
+  $('#tabbar').innerHTML = TABS.map(t => `<button class="tab" data-act="tab" data-v="${t.id}" aria-current="false">${ico(t.icon)}<span>${t.label}</span></button>`).join('');
+  $('#fab').innerHTML = ico('plus', 28);
+}
+function render() {
+  $('#screen').innerHTML = VIEWS[ui.tab]();
+  $$('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.v === ui.tab ? 'page' : 'false'));
+  $('#fab').hidden = !(ui.tab === 'today' || ui.tab === 'activity');
+}
+function go(tab) {
+  if (!VIEWS[tab]) return;
+  ui.tab = tab; render(); $('#screen').scrollTop = 0;
+  try { history.replaceState(null, '', '#' + tab); } catch (e) {}
+}
+function applyTheme() {
+  const th = S.settings.theme, root = document.documentElement;
+  if (th === 'system') { if (HOST_THEME) root.setAttribute('data-theme', HOST_THEME); else root.removeAttribute('data-theme'); }
+  else root.setAttribute('data-theme', th);
+}
+function tickShift() { const el = $('#shift-elapsed'); if (S.shift && el) el.textContent = elapsed(); }
+
+/* ---------- sheet */
+let sheetKind = null, lastFocus = null, draft = null, docDraft = null;
+function openSheet(html, kind = 'info') {
+  sheetKind = kind;
+  if (!$('#sheet').classList.contains('open')) lastFocus = document.activeElement;
+  const sh = $('#sheet'), sc = $('#scrim');
+  $('#sheet-body').innerHTML = html;
+  $('#sheet-body').scrollTop = 0;
+  sh.hidden = false; sc.hidden = false;
+  void sh.offsetHeight;
+  sh.classList.add('open'); sc.classList.add('open');
+  setTimeout(() => sh.querySelector('[data-act="close"]')?.focus({preventScroll: true}), 60);
+}
+function closeSheet() {
+  const sh = $('#sheet'), sc = $('#scrim');
+  sh.classList.remove('open'); sc.classList.remove('open');
+  sheetKind = null; draft = null; docDraft = null;
+  setTimeout(() => { if (!sh.classList.contains('open')) { sh.hidden = true; sc.hidden = true; } }, 280);
+  if (lastFocus && lastFocus.isConnected) lastFocus.focus({preventScroll: true});
+}
+const sheetHead = (title, sub = '') => `<div class="sheet-head"><div><h2 id="sheet-title">${title}</h2>${sub ? `<p class="muted small">${sub}</p>` : ''}</div><button class="icon-btn" data-act="close" aria-label="Close">${ico('x', 18)}</button></div>`;
+
+/* ---------- add / edit entry */
+let lastSrc = 'uber', lastCat = 'charging';
+function openAdd(mode, entry = null) {
+  draft = entry
+    ? {id: entry.id, mode: entry.type, amount: entry.type === 'shift' ? String(entry.miles || '') : (entry.amount / 100).toFixed(2).replace(/\.00$/, ''),
+       src: entry.src || lastSrc, cat: entry.cat || lastCat, date: entry.date, note: entry.note || '', receipt: entry.receipt || null, hours: entry.hours ?? 9,
+       batch: entry.batch || null, range: entry.from ? newRange(entry.from, entry.date, 'one') : null}
+    : {id: null, mode, amount: '', src: lastSrc, cat: lastCat, date: iso(TODAY), note: '', receipt: null, hours: 9, batch: null, range: null};
+  openSheet(addHTML(), 'add');
+  updateRange();
+}
+const refreshAdd = () => { $('#sheet-body').innerHTML = addHTML(); updateRange(); };
+const meterText = () => draft.mode === 'shift'
+  ? `${Number(draft.amount || 0).toLocaleString('en-GB')} mi`
+  : '£' + (() => { const [i, d] = (draft.amount || '0').split('.'); return Number(i || 0).toLocaleString('en-GB') + (d !== undefined ? '.' + d : ''); })();
+const meterLabel = () => draft.mode === 'shift' ? 'Business miles'
+  : draft.range ? {one: 'Total for the period', split: 'Total to split', each: 'Each day'}[draft.range.how]
+  : draft.mode === 'income' ? 'Takings' : 'Cost';
+function saveLabel() {
+  if (draft.mode === 'shift') return 'Save shift';
+  const p = strToPence(draft.amount), r = draft.range;
+  if (r && r.how !== 'one') {
+    const n = rangeError(r) ? 0 : rangeDays(r).length;
+    return r.how === 'split' ? `Save ${gbp(p)} over ${n} day${n === 1 ? '' : 's'}` : `Save ${n} × ${gbp(p)}`;
+  }
+  return `Save ${gbp(p)}`;
+}
+
+/* ---------- date range: add takings or costs for days that were missed */
+const WD_ORDER = [1, 2, 3, 4, 5, 6, 0], WD_NAME = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const newRange = (from, to, how) => ({from, to, how, wd: Array(7).fill(true)});
+function rangeError(r) {
+  if (!r.from || !r.to) return 'Pick both dates.';
+  if (r.from > r.to) return 'The start date is after the end date.';
+  if (r.from < iso(TY_START)) return `Start on or after ${dLong(TY_START)}. Earlier days belong to the last tax year.`;
+  if (r.to > iso(TODAY)) return "The end date hasn't happened yet.";
+  if (diffDays(parse(r.from), parse(r.to)) > 92) return 'Pick a period of 3 months or less.';
+  return '';
+}
+// Days that get an entry. "One total" is a single entry dated on the last day.
+function rangeDays(r) {
+  const out = [];
+  for (let d = parse(r.from); d <= parse(r.to); d = addDays(d, 1)) if (r.how === 'one' || r.wd[d.getDay()]) out.push(iso(d));
+  return out;
+}
+function rangeWarnings(r, days) {
+  const out = [], qs = quarters();
+  const qOf = ds => qs.find(q => ds >= iso(q.a) && ds <= iso(q.b));
+  if (r.how === 'one') {
+    const a = qOf(r.from), b = qOf(r.to);
+    if (a && b && a.n !== b.n) out.push(`This period runs from Q${a.n} into Q${b.n}. Split evenly gives each quarter its share.`);
+  }
+  const first = r.how === 'one' ? r.to : days[0];
+  const sent = first ? qs.filter(q => q.status === 'sent' && first <= iso(q.b)).pop() : null;
+  if (sent) out.push(`Q${sent.n} has already gone to HMRC. Your next quarterly update will include these figures, because each update covers the year so far.`);
+  return out;
+}
+function rangeHTML() {
+  const r = draft.range;
+  return `<div class="range">
+    ${draft.catchup ? `<p class="catchup">${ico('calendar', 16)}<span>Catching up on ${rangeLabel(r.from, r.to)}. <button class="link" data-act="daysoff"><span>I didn't work these days</span></button></span></p>` : ''}
+    <div class="range-dates">
+      <label class="field"><span class="lbl">From</span><input class="input" type="date" id="r-from" value="${r.from}" min="${iso(TY_START)}" max="${iso(TODAY)}"></label>
+      <label class="field"><span class="lbl">To</span><input class="input" type="date" id="r-to" value="${r.to}" min="${iso(TY_START)}" max="${iso(TODAY)}"></label>
+    </div>
+    ${draft.id ? '' : `<div class="seg" role="group" aria-label="How to record it">${[['split', 'Split evenly'], ['each', 'Same each day'], ['one', 'One total']].map(([v, l]) => `<button data-act="how" data-v="${v}" aria-pressed="${r.how === v}">${l}</button>`).join('')}</div>`}
+    ${r.how !== 'one' ? `<div class="wd" role="group" aria-label="Days you worked">${WD_ORDER.map(i => `<button data-act="wd" data-v="${i}" aria-pressed="${r.wd[i]}" aria-label="${WD_NAME[i]}">${WD_NAME[i].slice(0, 2)}</button>`).join('')}</div>` : ''}
+    <p class="hint" id="range-hint"></p>
+    <div id="range-warn"></div>
+  </div>`;
+}
+function updateRange() {
+  const r = draft && draft.range, hint = $('#range-hint');
+  if (!r || !hint) return;
+  const err = rangeError(r);
+  hint.classList.toggle('bad', !!err);
+  if (err) { hint.textContent = err; $('#range-warn').innerHTML = ''; return; }
+  const days = rangeDays(r), n = days.length, span = diffDays(parse(r.from), parse(r.to)) + 1, p = strToPence(draft.amount);
+  const sp = `${span} day${span === 1 ? '' : 's'}`;
+  hint.textContent = r.how === 'one' ? `${sp}. Saved as one entry dated ${dDM(parse(r.to))}, the last day.`
+    : !n ? 'Pick at least one day of the week.'
+    : r.how === 'split' ? `${n} of ${sp}${p ? ` · about ${gbp(Math.floor(p / n))} a day` : ''}`
+    : `${n} of ${sp}${p ? ` · ${gbp(p * n)} in total` : ''}`;
+  hint.classList.toggle('bad', !n);
+  $('#range-warn').innerHTML = rangeWarnings(r, days).map(w => `<p class="warn-line">${ico('alert', 15)}<span>${w}</span></p>`).join('');
+}
+const catHint = () => `Goes in HMRC's <b>${CAT[draft.cat].hmrc}</b> box${CAT[draft.cat].vehicle ? '. Private use is taken off at year end.' : '.'}`;
+function receiptHTML() {
+  const r = draft.receipt;
+  if (typeof r === 'string') return `<div class="receipt"><img src="${r}" alt="Receipt photo"><span>Receipt attached</span><button class="link" data-act="rm-receipt">Remove</button></div>`;
+  if (r === true) return `<div class="receipt"><span class="qa-ico t-ink" style="width:44px;height:44px;border-radius:8px">${ico('receipt', 20)}</span><span>Receipt saved</span><button class="link" data-act="rm-receipt">Remove</button></div>`;
+  return `<label class="btn btn-quiet btn-block">${ico('camera', 18)}<span>Add receipt photo</span><input type="file" accept="image/*" capture="environment" id="receipt-input" class="sr-only"></label>`;
+}
+function addHTML() {
+  const d = draft, shift = d.mode === 'shift';
+  const today = iso(TODAY), yday = iso(addDays(TODAY, -1));
+  return `
+  ${sheetHead(d.id ? 'Edit entry' : 'Add to your records')}
+  <div class="seg" role="group" aria-label="Entry type">${[['income', 'Takings'], ['expense', 'Cost'], ['shift', 'Shift']].map(([v, l]) => `<button data-act="mode" data-v="${v}" aria-pressed="${d.mode === v}">${l}</button>`).join('')}</div>
+  <div class="meter" id="meter"><span class="meter-lbl">${meterLabel()}</span><output class="meter-val" id="meter-val">${meterText()}</output></div>
+  ${d.mode === 'income' ? `<div class="chips" role="group" aria-label="Where it came from">${SOURCES.map(s => `<button class="chip" data-act="src" data-v="${s.id}" aria-pressed="${d.src === s.id}">${s.label}</button>`).join('')}</div>` : ''}
+  ${d.mode === 'expense' ? `<div class="cats" role="group" aria-label="Category">${CATS.map(c => `<button class="cat" data-act="cat" data-v="${c.id}" aria-pressed="${d.cat === c.id}">${ico(c.icon)}<span>${c.label}</span></button>`).join('')}</div><p class="hint" id="cat-hint">${catHint()}</p>` : ''}
+  ${shift ? `<div class="stepper"><b>Hours worked</b><div class="stepper-ctl"><button class="icon-btn" data-act="hrs" data-v="-0.25" aria-label="Fewer hours">−</button><output id="hrs-val">${fmtHours(d.hours)}</output><button class="icon-btn" data-act="hrs" data-v="0.25" aria-label="More hours">+</button></div></div>` : ''}
+  <div class="chips" role="group" aria-label="Date" id="day-chips">
+    <button class="chip" data-act="day" data-v="0" aria-pressed="${!d.range && d.date === today}">Today</button>
+    <button class="chip" data-act="day" data-v="-1" aria-pressed="${!d.range && d.date === yday}">Yesterday</button>
+    <label class="chip chip-date"><span class="sr-only">Pick a date</span><input type="date" id="add-date" value="${d.date}" min="${iso(TY_START)}" max="${today}"></label>
+    ${shift ? '' : `<button class="chip" data-act="range" aria-pressed="${!!d.range}">${ico('calendar', 16)}Date range</button>`}
+  </div>
+  ${d.range && !shift ? rangeHTML() : ''}
+  ${d.mode === 'expense' ? receiptHTML() : ''}
+  <input class="input" id="add-note" placeholder="${shift ? 'Note, for example airport runs' : 'Note (optional)'}" value="${esc(d.note)}" maxlength="80" aria-label="Note">
+  ${d.id && d.batch ? (() => {
+    const b = S.entries.filter(x => x.batch === d.batch).sort((x, y) => x.date < y.date ? -1 : 1);
+    return `<p class="note">${ico('calendar', 16)}<span>Added in one go: ${b.length} ${b.length === 1 ? 'entry' : 'entries'}, ${rangeLabel(b[0].date, b[b.length - 1].date)}. <button class="link" data-act="del-batch"><span>Delete all ${b.length}</span></button></span></p>`;
+  })() : ''}
+  <div class="keypad">${['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'del'].map(k => `<button class="key" data-act="key" data-v="${k}"${k === '.' && shift ? ' disabled' : ''} aria-label="${k === 'del' ? 'Delete last digit' : k === '.' ? 'Decimal point' : k}">${k === 'del' ? ico('back') : k}</button>`).join('')}</div>
+  <div class="sheet-actions">
+    ${d.id ? `<button class="btn btn-danger" data-act="del">${ico('trash', 18)}<span>Delete</span></button>` : ''}
+    <button class="btn btn-amber grow" id="save-btn" data-act="save">${saveLabel()}</button>
+  </div>`;
+}
+function updateMeter() { const v = $('#meter-val'); if (v) v.textContent = meterText(); const b = $('#save-btn'); if (b) b.textContent = saveLabel(); updateRange(); }
+function key(k) {
+  let s = draft.amount;
+  if (k === 'del') s = s.slice(0, -1);
+  else if (k === '.') { if (draft.mode === 'shift' || s.includes('.')) return; s = (s || '0') + '.'; }
+  else {
+    if (s.includes('.') && s.split('.')[1].length >= 2) return;
+    if (s.replace('.', '').length >= 7) return;
+    if (s === '0') s = '';
+    s += k;
+  }
+  draft.amount = s; updateMeter();
+}
+function syncDays() {
+  const today = iso(TODAY), yday = iso(addDays(TODAY, -1));
+  $$('#day-chips [data-act="day"]').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.v === '0' ? today : yday) === draft.date)));
+}
+function nudge(msg) { const m = $('#meter'); if (m) { m.classList.remove('shake'); void m.offsetWidth; m.classList.add('shake'); } toast(msg); }
+function saveRange() {
+  const d = draft, r = d.range, p = strToPence(d.amount);
+  const err = rangeError(r); if (err) return toast(err);
+  if (p <= 0) return nudge('Type the amount on the keypad first.');
+  const days = rangeDays(r), n = days.length;
+  if (!n) return toast('Pick at least one day of the week.');
+  if (r.how === 'split' && p < n) return toast('That total is too small to split across those days.');
+  const base = d.mode === 'income' ? {type: 'income', src: d.src} : {type: 'expense', cat: d.cat};
+  const note = d.note.trim(), stamp = Date.now().toString(36), ids = [];
+  if (r.how === 'one') {
+    const e = {...base, amount: p, date: r.to, from: r.from};
+    if (d.mode === 'expense') e.receipt = d.receipt || false;
+    if (note) e.note = note;
+    if (d.batch) e.batch = d.batch;
+    if (d.id) { const i = S.entries.findIndex(x => x.id === d.id); if (i > -1) S.entries[i] = {id: d.id, ...e}; }
+    else { ids.push('u' + stamp); S.entries.push({id: 'u' + stamp, ...e}); }
+  } else {
+    // split: the total is shared out (leftover pennies go on the first days); each: the amount repeats every day
+    const each = r.how === 'each' ? p : Math.floor(p / n), rem = r.how === 'split' ? p - each * n : 0;
+    const auto = r.how === 'split' ? `Part of ${gbp(p)} over ${n} days` : `Daily amount, ${rangeLabel(r.from, r.to)}`;
+    days.forEach((ds, i) => {
+      const e = {id: `u${stamp}${i}`, ...base, amount: each + (i < rem ? 1 : 0), date: ds, batch: 'b' + stamp, note: note || auto};
+      if (d.mode === 'expense') e.receipt = i === 0 ? (d.receipt || false) : !!d.receipt; // one photo covers the batch
+      ids.push(e.id); S.entries.push(e);
+    });
+  }
+  if (d.mode === 'income') lastSrc = d.src; else lastCat = d.cat;
+  const what = d.mode === 'income' ? SRC[d.src].label : CAT[d.cat].label.toLowerCase();
+  const msg = d.id ? 'Changes saved'
+    : r.how === 'one' ? `${gbp(p)} ${what} saved for ${rangeLabel(r.from, r.to)}`
+    : `${gbp(r.how === 'each' ? p * n : p)} ${what} added across ${n} days`;
+  save(); closeSheet(); render();
+  toast(msg, ids.length ? () => { S.entries = S.entries.filter(x => !ids.includes(x.id)); save(); render(); toast('Undone'); } : null);
+}
+function saveEntry() {
+  const d = draft; if (!d) return;
+  if (d.mode !== 'shift' && d.range) return saveRange();
+  if (d.date < iso(TY_START) || d.date > iso(TY_END)) return toast(`That date is in another tax year. This record book covers ${dLong(TY_START)} to ${dLong(TY_END)}.`);
+  if (d.date > iso(TODAY)) return toast("That date hasn't happened yet.");
+  let e;
+  if (d.mode === 'shift') {
+    const miles = parseInt(d.amount || '0', 10);
+    if (!miles && !d.hours) return nudge('Add your miles or hours first.');
+    e = {type: 'shift', date: d.date, hours: d.hours, miles};
+  } else {
+    const p = strToPence(d.amount);
+    if (p <= 0) return nudge('Type the amount on the keypad first.');
+    e = d.mode === 'income' ? {type: 'income', src: d.src, amount: p, date: d.date} : {type: 'expense', cat: d.cat, amount: p, date: d.date, receipt: d.receipt || false};
+    if (d.mode === 'income') lastSrc = d.src; else lastCat = d.cat;
+  }
+  if (d.note.trim()) e.note = d.note.trim();
+  if (d.batch) e.batch = d.batch;
+  if (d.id) { const i = S.entries.findIndex(x => x.id === d.id); if (i > -1) S.entries[i] = {id: d.id, ...e}; }
+  else S.entries.push({id: 'u' + Date.now().toString(36), ...e});
+  if (d.mode === 'shift' && d.fromShift) S.shift = null;
+  const msg = d.id ? 'Changes saved' : d.mode === 'shift' ? `Shift saved: ${fmtHours(e.hours)}, ${e.miles} miles` : `${gbp(e.amount)} ${d.mode === 'income' ? SRC[d.src].label : CAT[d.cat].label.toLowerCase()} saved`;
+  save(); closeSheet(); render(); toast(msg);
+}
+function armed(btn, label, fn) {
+  if (btn.dataset.armed === '1') return fn();
+  btn.dataset.armed = '1';
+  const span = btn.querySelector('span'), old = span.textContent;
+  span.textContent = label;
+  setTimeout(() => { if (btn.isConnected) { btn.dataset.armed = ''; span.textContent = old; } }, 3000);
+}
+function readImage(file, max = 560) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onerror = rej;
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = rej;
+      img.onload = () => {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', .62));
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ---------- other sheets */
+function openMtd(k) {
+  const q = quarters().find(x => x.key === k); if (!q) return;
+  const qt = totals(S.entries.filter(e => inRange(e, iso(q.a), iso(q.b))));
+  const yt = totals(S.entries.filter(e => inRange(e, iso(TY_START), iso(q.b))));
+  const groups = {};
+  for (const [c, v] of Object.entries(yt.byCat)) { const h = CAT[c].hmrc; groups[h] = groups[h] || [0, 0]; groups[h][1] += v; }
+  for (const [c, v] of Object.entries(qt.byCat)) { const h = CAT[c].hmrc; groups[h] = groups[h] || [0, 0]; groups[h][0] += v; }
+  const rows = Object.entries(groups).sort((a, b) => b[1][1] - a[1][1]).map(([h, [a, b]]) => `<span>${h}</span><span class="r num">${gbp(a)}</span><span class="r num">${gbp(b)}</span>`).join('');
+  openSheet(`
+    ${sheetHead(`Q${q.n} update`, `${dLong(q.a)} to ${dLong(q.b)} · ${q.status === 'sent' ? 'sent ' + dDM(parse(q.sent)) : 'due ' + dLong(q.due)}`)}
+    <div class="table">
+      <span class="h">HMRC line</span><span class="h r">Quarter</span><span class="h r">Year to date</span>
+      <span class="b">Turnover</span><span class="r num b">${gbp(qt.inc)}</span><span class="r num b">${gbp(yt.inc)}</span>
+      ${rows}
+      <span class="b">Total expenses</span><span class="r num b">${gbp(qt.exp)}</span><span class="r num b">${gbp(yt.exp)}</span>
+    </div>
+    <p class="note">${ico('alert', 16)}<span>HMRC receives the year-to-date column. Private use, capital allowances and your tax bill are settled in the final declaration.</span></p>
+    ${q.status === 'due' ? `<button class="btn btn-amber btn-block" data-act="mtd-send" data-v="${q.key}">${ico('send', 18)}<span>Send to HMRC</span></button><p class="fine center">Prototype: this marks the quarter as sent. Nothing leaves this page.</p>` : ''}`);
+}
+function openDoc(id) {
+  const d = S.docs.find(x => x.id === id); if (!d) return;
+  const st = docState(d);
+  docDraft = {id};
+  openSheet(`
+    ${sheetHead(d.label, d.who)}
+    <p><span class="pill ${st.tone}">${st.label}</span> <span class="muted small">${st.n < 0 ? 'Expired ' + st.when : st.n === 0 ? 'Expires today' : 'Expires in ' + st.when}</span></p>
+    <label class="field"><b>Expiry date</b><input class="input" type="date" id="doc-exp" value="${d.exp}"></label>
+    <label class="toggle"><input type="checkbox" id="doc-remind"${d.remind ? ' checked' : ''}><span>Remind me 30 days, 7 days and the day before it runs out</span></label>
+    <div class="photo-prev" id="doc-prev">${d.photo ? `<img src="${d.photo}" alt="Photo of ${esc(d.label)}">` : ''}</div>
+    <label class="btn btn-quiet btn-block">${ico('camera', 18)}<span>${d.photo ? 'Replace photo' : 'Add a photo of it'}</span><input type="file" accept="image/*" capture="environment" id="doc-photo" class="sr-only"></label>
+    <button class="btn btn-ink btn-block" data-act="doc-save" data-v="${id}">Save</button>`);
+}
+function openReg() {
+  openSheet(`
+    ${sheetHead('Look up a vehicle', 'Fill in make, fuel, CO₂, MOT and tax from the registration')}
+    <label class="field"><b>Registration</b><input class="input num" id="reg-in" maxlength="8" autocomplete="off" placeholder="AB12 CDE" value="KY22 TXA" style="text-transform:uppercase;font-weight:700;letter-spacing:.06em"></label>
+    <button class="btn btn-ink btn-block" data-act="reg-go">${ico('search', 18)}<span>Look up</span></button>
+    <div id="reg-out" aria-live="polite"></div>`);
+}
+function regGo() {
+  const v = ($('#reg-in').value || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim();
+  if (!v) return toast('Type a registration first.');
+  const out = $('#reg-out');
+  out.innerHTML = '<p class="hint">Checking…</p>';
+  setTimeout(() => {
+    if (!out.isConnected) return;
+    out.innerHTML = `<div class="reg-result">
+      <span class="plate"><span class="plate-band">UK</span><span class="plate-txt">${esc(v)}</span></span>
+      <dl class="specs">
+        <div><dt>Make</dt><dd>Toyota Corolla</dd></div><div><dt>Fuel</dt><dd>Hybrid electric</dd></div>
+        <div><dt>CO₂</dt><dd>102 g/km</dd></div><div><dt>First registered</dt><dd>Mar 2022</dd></div>
+        <div><dt>MOT</dt><dd>Valid to 14 Mar 2027</dd></div><div><dt>Tax</dt><dd>Taxed to 1 Apr 2027</dd></div>
+      </dl>
+      <p class="note">${ico('alert', 16)}<span>Over 50 g/km CO₂, so this car goes in the special rate pool at 6% a year if you buy it.</span></p>
+      <p class="fine">Sample result. The full app would fetch this from the DVLA Vehicle Enquiry Service and the DVSA MOT History API.</p>
+    </div>`;
+  }, 650);
+}
+function copyText(text, msg) {
+  const fallback = () => {
+    openSheet(`${sheetHead('Copy this text', 'Select it all, then copy')}<textarea class="input" id="copy-area" readonly aria-label="Text to copy">${esc(text)}</textarea>`);
+    const ta = $('#copy-area'); ta.focus(); ta.select();
+  };
+  try { navigator.clipboard.writeText(text).then(() => toast(msg), fallback); } catch (e) { fallback(); }
+}
+function csv() {
+  const rows = [['Date', 'Period start', 'Type', 'Source or category', 'HMRC category', 'Amount (GBP)', 'Hours', 'Miles', 'Note']];
+  for (const e of [...S.entries].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0)) {
+    rows.push([e.date, e.from || '', e.type === 'income' ? 'Takings' : e.type === 'expense' ? 'Cost' : 'Shift',
+      e.type === 'income' ? SRC[e.src].label : e.type === 'expense' ? CAT[e.cat].label : '',
+      e.type === 'income' ? 'Turnover' : e.type === 'expense' ? CAT[e.cat].hmrc : '',
+      e.amount != null ? (e.amount / 100).toFixed(2) : '', e.hours ?? '', e.miles ?? '', e.note || '']);
+  }
+  return rows.map(r => r.map(v => { v = String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; }).join(',')).join('\n');
+}
+function ucText() {
+  const {a, b, t} = ucMonth();
+  return `Self-employed figures, ${dLong(a)} to ${dLong(b)}\nMoney in: ${gbp(t.inc)}\nBusiness costs paid: ${gbp(t.exp)}\nIncome tax and NI paid: £0.00\nSelf-employed earnings: ${gbp(t.net)}`;
+}
+
+/* ---------- toast */
+let toastT, toastUndo = null;
+function hideToast() { const t = $('#toast'); t.classList.remove('show'); setTimeout(() => { if (!t.classList.contains('show')) t.hidden = true; }, 220); }
+function toast(msg, undo = null) {
+  const t = $('#toast');
+  toastUndo = undo;
+  t.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button class="toast-btn" data-act="undo">Undo</button>' : ''}`;
+  t.hidden = false; void t.offsetHeight; t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(hideToast, undo ? 6000 : 2800);
+}
+
+/* ---------- actions */
+const ACT = {
+  tab: t => go(t.dataset.v),
+  fab: () => openAdd(ui.tab === 'activity' && ui.filter !== 'all' ? ui.filter : 'income'),
+  add: t => openAdd(t.dataset.mode || 'income'),
+  snap: () => { openAdd('expense'); $('#receipt-input')?.click(); },
+  mode: t => {
+    if (draft.mode === t.dataset.v) return;
+    draft.mode = t.dataset.v; draft.amount = '';
+    if (draft.mode === 'shift') { draft.range = null; draft.catchup = false; }
+    refreshAdd();
+  },
+  key: t => key(t.dataset.v),
+  src: t => { draft.src = t.dataset.v; $$('[data-act="src"]').forEach(b => b.setAttribute('aria-pressed', String(b === t))); },
+  cat: t => { draft.cat = t.dataset.v; $$('[data-act="cat"]').forEach(b => b.setAttribute('aria-pressed', String(b === t))); $('#cat-hint').innerHTML = catHint(); },
+  day: t => {
+    draft.date = iso(addDays(TODAY, Number(t.dataset.v)));
+    if (draft.range) { draft.range = null; draft.catchup = false; refreshAdd(); return; }
+    $('#add-date').value = draft.date; syncDays();
+  },
+  range: () => {
+    if (draft.range) return;
+    const clamp = d => d < TY_START ? TY_START : d;
+    draft.range = newRange(iso(clamp(addDays(TODAY, -7))), iso(clamp(addDays(TODAY, -1))), draft.id ? 'one' : 'split');
+    refreshAdd();
+  },
+  how: t => { draft.range.how = t.dataset.v; refreshAdd(); },
+  wd: t => { const i = Number(t.dataset.v); draft.range.wd[i] = !draft.range.wd[i]; t.setAttribute('aria-pressed', String(draft.range.wd[i])); updateMeter(); },
+  catchup: t => {
+    const [a, b] = t.dataset.v.split('_');
+    openAdd('income'); draft.range = newRange(a, b, 'split'); draft.catchup = true; refreshAdd();
+  },
+  daysoff: () => {
+    const r = draft.range, added = [];
+    for (let d = parse(r.from); d <= parse(r.to); d = addDays(d, 1)) added.push(iso(d));
+    S.daysOff = [...(S.daysOff || []), ...added];
+    save(); closeSheet(); render();
+    toast(`${added.length} days marked as days off`, () => { S.daysOff = S.daysOff.filter(x => !added.includes(x)); save(); render(); toast('Undone'); });
+  },
+  'del-batch': t => armed(t, 'Tap again to delete all', () => {
+    const b = draft.batch, n = S.entries.filter(x => x.batch === b).length;
+    S.entries = S.entries.filter(x => x.batch !== b); save(); closeSheet(); render(); toast(`${n} entries deleted`);
+  }),
+  undo: () => { const f = toastUndo; toastUndo = null; clearTimeout(toastT); hideToast(); if (f) f(); },
+  hrs: t => { draft.hours = Math.min(16, Math.max(0, draft.hours + Number(t.dataset.v))); $('#hrs-val').textContent = fmtHours(draft.hours); },
+  save: saveEntry,
+  del: t => armed(t, 'Tap again to delete', () => { S.entries = S.entries.filter(x => x.id !== draft.id); save(); closeSheet(); render(); toast('Entry deleted'); }),
+  'rm-receipt': () => { draft.receipt = null; refreshAdd(); },
+  edit: t => { const e = S.entries.find(x => x.id === t.dataset.v); if (e) openAdd(e.type, e); },
+  filter: t => { ui.filter = t.dataset.v; render(); },
+  earlier: () => { ui.weeks += 4; render(); },
+  receipts: () => { ui.filter = 'expense'; go('activity'); },
+  shift: () => {
+    if (!S.shift) { S.shift = {start: Date.now()}; save(); render(); toast('Shift started. Drive safe.'); return; }
+    const hrs = Math.max(0.25, Math.round((Date.now() - S.shift.start) / 36e5 * 4) / 4);
+    openAdd('shift'); draft.hours = hrs; draft.fromShift = true; refreshAdd();
+  },
+  mtd: t => openMtd(t.dataset.v),
+  'mtd-send': t => { S.mtdSent[t.dataset.v] = iso(TODAY); save(); closeSheet(); render(); toast('Marked as sent. This prototype does not contact HMRC.'); },
+  doc: t => openDoc(t.dataset.v),
+  'doc-save': t => {
+    const d = S.docs.find(x => x.id === t.dataset.v), v = $('#doc-exp').value;
+    if (!v) return toast('Pick the expiry date first.');
+    d.exp = v; d.remind = $('#doc-remind').checked;
+    if (docDraft && docDraft.photo) d.photo = docDraft.photo;
+    save(); closeSheet(); render(); toast(`${d.label} updated`);
+  },
+  reg: openReg,
+  'reg-go': regGo,
+  region: t => { S.settings.region = t.dataset.v; save(); render(); },
+  theme: t => { S.settings.theme = t.dataset.v; applyTheme(); save(); render(); },
+  csv: () => copyText(csv(), 'CSV copied. Paste it into a spreadsheet or an email.'),
+  uc: () => copyText(ucText(), 'Universal Credit figures copied'),
+  reset: t => armed(t, 'Tap again to reset everything', () => { const th = S.settings.theme; S = seed(); S.settings.theme = th; ui.filter = 'all'; ui.weeks = 3; save(); render(); toast('Sample data restored'); }),
+  close: closeSheet,
+};
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || t.disabled) return;
+  const f = ACT[t.dataset.act];
+  if (f) f(t, e);
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'add-note' && draft) draft.note = t.value;
+  else if (t.id === 'biz-pct') $('#biz-out').textContent = t.value + '%';
+  else if (t.id === 'phone-pct') $('#phone-out').textContent = t.value + '%';
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'receipt-input' && t.files && t.files[0] && draft) {
+    try { draft.receipt = await readImage(t.files[0]); refreshAdd(); }
+    catch (err) { toast("That photo couldn't be read. Try a JPG or PNG."); }
+  } else if (t.id === 'doc-photo' && t.files && t.files[0] && docDraft) {
+    try { docDraft.photo = await readImage(t.files[0]); $('#doc-prev').innerHTML = `<img src="${docDraft.photo}" alt="New photo">`; }
+    catch (err) { toast("That photo couldn't be read. Try a JPG or PNG."); }
+  } else if (t.id === 'add-date' && draft && t.value) {
+    draft.date = t.value;
+    if (draft.range) { draft.range = null; draft.catchup = false; refreshAdd(); } else syncDays();
+  } else if ((t.id === 'r-from' || t.id === 'r-to') && draft && draft.range) {
+    draft.range[t.id === 'r-from' ? 'from' : 'to'] = t.value;
+    draft.catchup = false; $('.catchup')?.remove(); updateMeter();
+  }
+  else if (t.id === 'biz-pct') { S.settings.bizPct = Number(t.value); save(); }
+  else if (t.id === 'phone-pct') { S.settings.phonePct = Number(t.value); save(); }
+  else if (t.id === 'last-bill') {
+    const p = Math.max(0, Math.round(parseFloat(String(t.value).replace(/[£,\s]/g, '')) * 100) || 0);
+    S.settings.lastBill = p; t.value = (p / 100).toFixed(2); save(); toast('Saved');
+  }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && sheetKind) { closeSheet(); return; }
+  if (sheetKind !== 'add' || !draft) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea') return;
+  if (/^[0-9]$/.test(e.key)) { key(e.key); e.preventDefault(); }
+  else if (e.key === '.') { key('.'); e.preventDefault(); }
+  else if (e.key === 'Backspace') { key('del'); e.preventDefault(); }
+  else if (e.key === 'Enter' && tag !== 'button') { saveEntry(); e.preventDefault(); }
+});
+
+/* ---------- start */
+const fromHash = location.hash.replace('#', '');
+if (VIEWS[fromHash]) ui.tab = fromHash;
+applyTheme(); buildTabbar(); render(); save();
+setInterval(tickShift, 15000);
+})();
+</script>
+</body>
+</html>
